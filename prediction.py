@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
@@ -7,186 +8,308 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 import streamlit as st
 import folium
-from folium.plugins import HeatMap
+from statsmodels.tsa.arima.model import ARIMA
+from streamlit_folium import folium_static
 
-def predict_migrant():
-    # Extended dataset including additional demographic data
+def forecast_migrants(migrants_series):
+    model = ARIMA(migrants_series, order=(1, 1, 1))  # Adjust order based on your data
+    model_fit = model.fit()
+    forecast = model_fit.forecast(steps=5)  # Forecast for the next 5 years
+    return forecast
+
+def main():
+    # Enhanced dataset with demographic data for selected cities across different continents
     data = {
-        'Neighborhood': ['Downtown', 'Uptown', 'Suburb', 'Countryside', 'Historic District', 
-                        'Central', 'Old Town', 'New Town', 'Industrial Zone', 'Riverside'],
-        'GDP Growth Rate (%)': [3.5, 2.1, 4.0, 1.5, 3.0, 2.8, 3.2, 3.9, 4.5, 2.0],
-        'Unemployment Rate (%)': [5.0, 6.5, 4.2, 7.0, 5.8, 6.0, 5.5, 4.9, 3.8, 6.2],
-        'Living Conditions Index': [70, 60, 80, 50, 65, 55, 75, 85, 90, 60],
-        'Number of Migrants': [5000, 3000, 6000, 2000, 4000, 3500, 5500, 6500, 7000, 2500],
-        'Age Distribution 0-18 (%)': [25, 20, 30, 15, 20, 18, 28, 35, 40, 22],
-        'Age Distribution 19-64 (%)': [65, 60, 55, 70, 60, 62, 58, 55, 50, 65],
-        'Age Distribution 65+ (%)': [10, 20, 15, 15, 20, 20, 14, 10, 10, 13],
-        'Gender Ratio (Male/Female)': [1.05, 0.98, 1.10, 1.02, 0.95, 1.00, 1.07, 1.12, 1.08, 1.01],
-        'Single-Parent Families (%)': [12, 15, 10, 8, 18, 14, 13, 12, 16, 11],
-        'Latitude': [40.7128, 40.7831, 40.7128, 40.7306, 40.7580, 40.7306, 40.7411, 40.7580, 40.7306, 40.7128],
-        'Longitude': [-74.0060, -73.9712, -74.0060, -73.9352, -73.9855, -73.9352, -73.9897, -73.9855, -73.9352, -74.0060]
+        'Neighborhood': ['Nairobi', 'Lagos', 'Accra', 'Cairo', 'Johannesburg', 
+                        'Addis Ababa', 'Dar es Salaam', 'Kinshasa', 'Cape Town', 'Abidjan',
+                        'London', 'Berlin', 'Paris', 'Madrid', 'Rome',
+                        'New York', 'Los Angeles', 'Toronto', 'Sao Paulo', 'Mexico City',
+                        'Sydney', 'Auckland', 'Wellington', 'Brisbane', 'Melbourne',
+                        'Tokyo', 'Beijing', 'Mumbai', 'Seoul', 'Bangkok'],
+        'GDP Growth Rate (%)': [5.5, 3.1, 5.2, 4.0, 3.6, 
+                                6.1, 7.0, 4.5, 3.9, 5.0,
+                                2.5, 1.9, 1.7, 2.2, 1.5,
+                                3.0, 4.0, 3.5, 2.8, 3.4,
+                                2.9, 3.1, 3.2, 3.0, 2.8,
+                                1.8, 5.0, 5.4, 2.1, 3.0],
+        'Unemployment Rate (%)': [6.5, 15.0, 6.8, 10.0, 25.0, 
+                                  15.5, 10.2, 12.0, 18.0, 9.5,
+                                  5.0, 4.5, 8.0, 14.0, 9.0,
+                                  7.5, 9.0, 6.0, 11.0, 4.8,
+                                  4.0, 4.5, 5.2, 4.0, 3.8,
+                                  3.0, 4.0, 7.0, 3.5, 5.0],
+        'Living Conditions Index': [60, 55, 70, 50, 40, 
+                                    65, 60, 50, 75, 65,
+                                    80, 75, 85, 80, 78,
+                                    70, 65, 75, 60, 55,
+                                    85, 90, 88, 86, 89,
+                                    70, 72, 65, 67, 68],
+        'Population Density (people/km²)': [4200, 3200, 1300, 1900, 1600, 
+                                             1800, 2500, 1500, 1200, 2500,
+                                             5500, 4000, 2100, 3200, 1600,
+                                             11000, 8500, 6000, 8500, 5000,
+                                             4000, 1800, 3000, 2000, 4200,
+                                             6100, 1300, 2000, 8000, 2000],
+        'Median Age (years)': [24, 18, 26, 24, 30, 
+                               20, 19, 22, 27, 28,
+                               40, 43, 41, 38, 35,
+                               36, 34, 40, 31, 30,
+                               34, 37, 36, 35, 33,
+                               48, 36, 29, 41, 30],
+        'Number of Migrants': [5000, 3000, 6000, 2000, 4000, 
+                               3500, 5500, 6500, 7000, 2500,
+                               8000, 10000, 9500, 11000, 9000,
+                               12000, 11000, 9000, 15000, 13000,
+                               5000, 6000, 7000, 8000, 7500,
+                               3000, 4500, 5000, 6000, 4000],
+        'Latitude': [-1.286389, 6.524, 5.6037, 30.0444, -26.2041, 
+                     9.03, -6.7924, -4.441, -33.918861, 5.345,
+                     51.5074, 52.5200, 48.8566, 40.4168, 41.9028,
+                     40.7128, 34.0522, 43.65107, -23.5505, 19.4326,
+                     -33.8688, -36.8485, -41.2865, -27.4705, -37.8136,
+                     35.6762, 39.9042, 19.0760, 37.5665, 13.7563],
+        'Longitude': [36.817223, 3.3792, -0.1870, 31.2357, 28.0473, 
+                      38.7469, 39.2083, 15.2663, 18.4233, -4.008,
+                      -0.1278, 13.4050, 2.3522, -3.7038, 12.4964,
+                      -74.0060, -118.2437, -79.3832, -46.6333, -99.1332,
+                      151.2093, 174.7633, 175.0154, 153.0211, 144.9632,
+                      139.6503, 116.4074, 72.8777, 126.9780, 100.5167]
     }
 
     df = pd.DataFrame(data)
 
-    # Define features and targets
-    X = df[['GDP Growth Rate (%)', 'Unemployment Rate (%)', 'Living Conditions Index']]
-    y_migrants = df['Number of Migrants']
-    y_age_dist_0_18 = df['Age Distribution 0-18 (%)']
-    y_age_dist_19_64 = df['Age Distribution 19-64 (%)']
-    y_age_dist_65 = df['Age Distribution 65+ (%)']
-    y_gender_ratio = df['Gender Ratio (Male/Female)']
-    y_single_parent_families = df['Single-Parent Families (%)']
+    # User input for parameters
+    st.title('Population Change Prediction Due to Migration and Demographic Analysis')
 
-    # Split the data into training and testing sets for predictions
+    # Forecasting Migrants
+    migrants_forecast = forecast_migrants(df['Number of Migrants'])
+    df_forecast = pd.DataFrame({
+        'Year': np.arange(2025, 2030),
+        'Predicted Migrants': migrants_forecast
+    })
+
+    # Menu for visualization type
+    menu_option = st.selectbox("Choose Visualization Type", ["Map", "Histogram", "Data Table", "Line Chart", "Bar Chart"])
+
+    if menu_option == "Map":
+        # Visualization: Choropleth Map
+        m = folium.Map(location=[0, 20], zoom_start=2)  # Center on Africa
+        for index, row in df.iterrows():
+            folium.CircleMarker(
+                location=(row['Latitude'], row['Longitude']),
+                radius=row['Number of Migrants'] / 1000,  # Scale for visibility
+                color='blue',
+                fill=True,
+                fill_opacity=0.6,
+                popup=f"{row['Neighborhood']}: {row['Number of Migrants']} Migrants"
+            ).add_to(m)
+
+        st.write("### Predicted Migrants Map")
+        folium_static(m)
+
+    elif menu_option == "Histogram":
+        # Histogram of predicted migrants
+        st.write("### Histogram of Predicted Migrants (2025-2030)")
+        plt.figure(figsize=(10, 6))
+        plt.hist(df_forecast['Predicted Migrants'], bins=10, color='blue', alpha=0.7)
+        plt.title('Distribution of Predicted Number of Migrants (2025-2030)')
+        plt.xlabel('Predicted Number of Migrants')
+        plt.ylabel('Frequency')
+        st.pyplot(plt)
+
+    elif menu_option == "Data Table":
+        # Display predictions in a data table
+        st.write("### Predicted Migrants by Neighborhood and Year")
+        st.write(df_forecast)
+
+    elif menu_option == "Line Chart":
+        # Line chart of predicted migrants over the years
+        st.write("### Line Chart of Predicted Migrants (2025-2030)")
+        plt.figure(figsize=(10, 6))
+        plt.plot(df_forecast['Year'], df_forecast['Predicted Migrants'], marker='o', color='blue')
+        plt.title('Predicted Number of Migrants Over the Next 5 Years')
+        plt.xlabel('Year')
+        plt.ylabel('Predicted Number of Migrants')
+        plt.xticks(df_forecast['Year'])
+        st.pyplot(plt)
+
+    elif menu_option == "Bar Chart":
+        # Bar chart comparing predicted migrants across neighborhoods
+        st.write("### Bar Chart of Predicted Migrants by Neighborhood")
+        plt.figure(figsize=(10, 6))
+        plt.bar(df['Neighborhood'], df['Number of Migrants'], color='blue', alpha=0.7)
+        plt.title('Predicted Number of Migrants by Neighborhood')
+        plt.xlabel('Neighborhood')
+        plt.ylabel('Number of Migrants')
+        plt.xticks(rotation=45)
+        st.pyplot(plt)
+
+    # Model evaluation
+    X = df[['GDP Growth Rate (%)', 'Unemployment Rate (%)', 'Living Conditions Index', 
+             'Population Density (people/km²)', 'Median Age (years)']]
+    y_migrants = df['Number of Migrants']
+
     X_train, X_test, y_train_migrants, y_test_migrants = train_test_split(
         X, y_migrants, test_size=0.2, random_state=0
     )
-    X_train, X_test, y_train_age_dist_0_18, y_test_age_dist_0_18 = train_test_split(
-        X, y_age_dist_0_18, test_size=0.2, random_state=0
-    )
-    X_train, X_test, y_train_age_dist_19_64, y_test_age_dist_19_64 = train_test_split(
-        X, y_age_dist_19_64, test_size=0.2, random_state=0
-    )
-    X_train, X_test, y_train_age_dist_65, y_test_age_dist_65 = train_test_split(
-        X, y_age_dist_65, test_size=0.2, random_state=0
-    )
-    X_train, X_test, y_train_gender_ratio, y_test_gender_ratio = train_test_split(
-        X, y_gender_ratio, test_size=0.2, random_state=0
-    )
-    X_train, X_test, y_train_single_parent_families, y_test_single_parent_families = train_test_split(
-        X, y_single_parent_families, test_size=0.2, random_state=0
-    )
 
-    # Create and train the models
     pipeline_migrants = make_pipeline(
         StandardScaler(),
         LinearRegression()
     )
     pipeline_migrants.fit(X_train, y_train_migrants)
 
-    pipeline_age_dist_0_18 = make_pipeline(
-        StandardScaler(),
-        LinearRegression()
-    )
-    pipeline_age_dist_0_18.fit(X_train, y_train_age_dist_0_18)
-
-    pipeline_age_dist_19_64 = make_pipeline(
-        StandardScaler(),
-        LinearRegression()
-    )
-    pipeline_age_dist_19_64.fit(X_train, y_train_age_dist_19_64)
-
-    pipeline_age_dist_65 = make_pipeline(
-        StandardScaler(),
-        LinearRegression()
-    )
-    pipeline_age_dist_65.fit(X_train, y_train_age_dist_65)
-
-    pipeline_gender_ratio = make_pipeline(
-        StandardScaler(),
-        LinearRegression()
-    )
-    pipeline_gender_ratio.fit(X_train, y_train_gender_ratio)
-
-    pipeline_single_parent_families = make_pipeline(
-        StandardScaler(),
-        LinearRegression()
-    )
-    pipeline_single_parent_families.fit(X_train, y_train_single_parent_families)
-
-    # Predict for the entire dataset
+    # Predictions
     df['Predicted Migrants'] = pipeline_migrants.predict(X)
-    df['Predicted Age Distribution 0-18 (%)'] = pipeline_age_dist_0_18.predict(X)
-    df['Predicted Age Distribution 19-64 (%)'] = pipeline_age_dist_19_64.predict(X)
-    df['Predicted Age Distribution 65+ (%)'] = pipeline_age_dist_65.predict(X)
-    df['Predicted Gender Ratio (Male/Female)'] = pipeline_gender_ratio.predict(X)
-    df['Predicted Single-Parent Families (%)'] = pipeline_single_parent_families.predict(X)
 
-    # Streamlit app
-    st.title('Population Change Prediction Due to Migration and Demographic Analysis')
-
-    # Display predictions
-    st.write("### Predicted Population Changes and Demographic Shifts")
-    st.write(df[['Neighborhood', 'Predicted Migrants', 'Predicted Age Distribution 0-18 (%)', 
-                'Predicted Age Distribution 19-64 (%)', 'Predicted Age Distribution 65+ (%)', 
-                'Predicted Gender Ratio (Male/Female)', 'Predicted Single-Parent Families (%)']])
-
-    # Visualization: Bar charts for predicted demographic changes
-    fig_demographics, axs = plt.subplots(3, 2, figsize=(14, 12))
-    fig_demographics.suptitle('Predicted Demographic Changes by Neighborhood')
-
-    # Number of Migrants
-    axs[0, 0].bar(df['Neighborhood'], df['Predicted Migrants'], color='blue')
-    axs[0, 0].set_ylabel('Number of Migrants')
-    axs[0, 0].set_title('Predicted Number of Migrants')
-    axs[0, 0].tick_params(axis='x', rotation=45)
-
-    # Age Distribution 0-18
-    axs[0, 1].bar(df['Neighborhood'], df['Predicted Age Distribution 0-18 (%)'], color='orange')
-    axs[0, 1].set_ylabel('Age Distribution 0-18 (%)')
-    axs[0, 1].set_title('Predicted Age Distribution 0-18')
-    axs[0, 1].tick_params(axis='x', rotation=45)
-
-    # Age Distribution 19-64
-    axs[1, 0].bar(df['Neighborhood'], df['Predicted Age Distribution 19-64 (%)'], color='green')
-    axs[1, 0].set_ylabel('Age Distribution 19-64 (%)')
-    axs[1, 0].set_title('Predicted Age Distribution 19-64')
-    axs[1, 0].tick_params(axis='x', rotation=45)
-
-    # Age Distribution 65+
-    axs[1, 1].bar(df['Neighborhood'], df['Predicted Age Distribution 65+ (%)'], color='red')
-    axs[1, 1].set_ylabel('Age Distribution 65+ (%)')
-    axs[1, 1].set_title('Predicted Age Distribution 65+')
-    axs[1, 1].tick_params(axis='x', rotation=45)
-
-    # Gender Ratio
-    axs[2, 0].bar(df['Neighborhood'], df['Predicted Gender Ratio (Male/Female)'], color='purple')
-    axs[2, 0].set_ylabel('Gender Ratio (Male/Female)')
-    axs[2, 0].set_title('Predicted Gender Ratio')
-    axs[2, 0].tick_params(axis='x', rotation=45)
-
-    # Single-Parent Families
-    axs[2, 1].bar(df['Neighborhood'], df['Predicted Single-Parent Families (%)'], color='brown')
-    axs[2, 1].set_ylabel('Single-Parent Families (%)')
-    axs[2, 1].set_title('Predicted Single-Parent Families')
-    axs[2, 1].tick_params(axis='x', rotation=45)
-
-    plt.tight_layout(rect=[0, 0, 1, 0.95])
-    st.pyplot(fig_demographics)
-
-    # Visualization: Map with HeatMap for predicted migrants
-    m = folium.Map(location=[df['Latitude'].mean(), df['Longitude'].mean()], zoom_start=12)
-    heat_data = [[row['Latitude'], row['Longitude'], row['Predicted Migrants']] for index, row in df.iterrows()]
-    HeatMap(heat_data).add_to(m)
-
-    # Save map to HTML file and display it in Streamlit
-    map_html = 'map.html'
-    m.save(map_html)
-    with open(map_html, 'r') as f:
-        st.components.v1.html(f.read(), height=500)
-
-    # Optionally, display model performance on test set
+    # Evaluate model
     y_pred_migrants = pipeline_migrants.predict(X_test)
-    y_pred_age_dist_0_18 = pipeline_age_dist_0_18.predict(X_test)
-    y_pred_age_dist_19_64 = pipeline_age_dist_19_64.predict(X_test)
-    y_pred_age_dist_65 = pipeline_age_dist_65.predict(X_test)
-    y_pred_gender_ratio = pipeline_gender_ratio.predict(X_test)
-    y_pred_single_parent_families = pipeline_single_parent_families.predict(X_test)
-
     mse_migrants = mean_squared_error(y_test_migrants, y_pred_migrants)
-    mse_age_dist_0_18 = mean_squared_error(y_test_age_dist_0_18, y_pred_age_dist_0_18)
-    mse_age_dist_19_64 = mean_squared_error(y_test_age_dist_19_64, y_pred_age_dist_19_64)
-    mse_age_dist_65 = mean_squared_error(y_test_age_dist_65, y_pred_age_dist_65)
-    mse_gender_ratio = mean_squared_error(y_test_gender_ratio, y_pred_gender_ratio)
-    mse_single_parent_families = mean_squared_error(y_test_single_parent_families, y_pred_single_parent_families)
 
     st.write("### Model Evaluation")
     st.write(f"Mean Squared Error for Number of Migrants: {mse_migrants:.2f}")
-    st.write(f"Mean Squared Error for Age Distribution 0-18: {mse_age_dist_0_18:.2f}")
-    st.write(f"Mean Squared Error for Age Distribution 19-64: {mse_age_dist_19_64:.2f}")
-    st.write(f"Mean Squared Error for Age Distribution 65+: {mse_age_dist_65:.2f}")
-    st.write(f"Mean Squared Error for Gender Ratio: {mse_gender_ratio:.2f}")
-    st.write(f"Mean Squared Error for Single-Parent Families: {mse_single_parent_families:.2f}")
+
+if __name__ == "__main__":
+    main()
 
 
+
+
+
+# import pandas as pd
+# import numpy as np
+# import matplotlib.pyplot as plt
+# from sklearn.model_selection import train_test_split
+# from sklearn.linear_model import LinearRegression
+# from sklearn.pipeline import make_pipeline
+# from sklearn.preprocessing import StandardScaler
+# from sklearn.metrics import mean_squared_error
+# import streamlit as st
+# import folium
+# from statsmodels.tsa.arima.model import ARIMA
+# from streamlit_folium import folium_static
+
+# def forecast_migrants(migrants_series):
+#     model = ARIMA(migrants_series, order=(1, 1, 1))  # Adjust order based on your data
+#     model_fit = model.fit()
+#     forecast = model_fit.forecast(steps=5)  # Forecast for the next 5 years
+#     return forecast
+
+# def main():
+#     # Enhanced dataset with demographic data for selected African cities
+#     data = {
+#         'Neighborhood': ['Nairobi', 'Lagos', 'Accra', 'Cairo', 'Johannesburg', 
+#                         'Addis Ababa', 'Dar es Salaam', 'Kinshasa', 'Cape Town', 'Abidjan'],
+#         'GDP Growth Rate (%)': [5.5, 3.1, 5.2, 4.0, 3.6, 
+#                                 6.1, 7.0, 4.5, 3.9, 5.0],
+#         'Unemployment Rate (%)': [6.5, 15.0, 6.8, 10.0, 25.0, 
+#                                   15.5, 10.2, 12.0, 18.0, 9.5],
+#         'Living Conditions Index': [60, 55, 70, 50, 40, 
+#                                     65, 60, 50, 75, 65],
+#         'Population Density (people/km²)': [4200, 3200, 1300, 1900, 1600, 
+#                                              1800, 2500, 1500, 1200, 2500],
+#         'Median Age (years)': [24, 18, 26, 24, 30, 
+#                                20, 19, 22, 27, 28],
+#         'Number of Migrants': [5000, 3000, 6000, 2000, 4000, 
+#                                3500, 5500, 6500, 7000, 2500],
+#         'Latitude': [-1.286389, 6.524, 5.6037, 30.0444, -26.2041, 
+#                      9.03, -6.7924, -4.441, -33.918861, 5.345],
+#         'Longitude': [36.817223, 3.3792, -0.1870, 31.2357, 28.0473, 
+#                       38.7469, 39.2083, 15.2663, 18.4233, -4.008]
+#     }
+
+#     df = pd.DataFrame(data)
+
+#     # User input for parameters
+#     st.title('Population Change Prediction Due to Migration and Demographic Analysis')
+
+#     # Forecasting Migrants
+#     migrants_forecast = forecast_migrants(df['Number of Migrants'])
+#     df_forecast = pd.DataFrame({
+#         'Year': np.arange(2025, 2030),
+#         'Predicted Migrants': migrants_forecast
+#     })
+
+#     # Menu for visualization type
+#     menu_option = st.selectbox("Choose Visualization Type", ["Map", "Histogram", "Data Table", "Line Chart", "Bar Chart"])
+
+#     if menu_option == "Map":
+#         # Visualization: Choropleth Map
+#         m = folium.Map(location=[0, 20], zoom_start=2)  # Center on Africa
+#         for index, row in df.iterrows():
+#             folium.CircleMarker(
+#                 location=(row['Latitude'], row['Longitude']),
+#                 radius=row['Number of Migrants'] / 1000,  # Scale for visibility
+#                 color='blue',
+#                 fill=True,
+#                 fill_opacity=0.6,
+#                 popup=f"{row['Neighborhood']}: {row['Number of Migrants']} Migrants"
+#             ).add_to(m)
+
+#         st.write("### Predicted Migrants Map")
+#         folium_static(m)
+
+#     elif menu_option == "Histogram":
+#         # Histogram of predicted migrants
+#         st.write("### Histogram of Predicted Migrants (2025-2030)")
+#         plt.figure(figsize=(10, 6))
+#         plt.hist(df_forecast['Predicted Migrants'], bins=10, color='blue', alpha=0.7)
+#         plt.title('Distribution of Predicted Number of Migrants (2025-2030)')
+#         plt.xlabel('Predicted Number of Migrants')
+#         plt.ylabel('Frequency')
+#         st.pyplot(plt)
+
+#     elif menu_option == "Data Table":
+#         # Display predictions in a data table
+#         st.write("### Predicted Migrants by Neighborhood and Year")
+#         st.write(df_forecast)
+
+#     elif menu_option == "Line Chart":
+#         # Line chart of predicted migrants over the years
+#         st.write("### Line Chart of Predicted Migrants (2025-2030)")
+#         plt.figure(figsize=(10, 6))
+#         plt.plot(df_forecast['Year'], df_forecast['Predicted Migrants'], marker='o', color='blue')
+#         plt.title('Predicted Number of Migrants Over the Next 5 Years')
+#         plt.xlabel('Year')
+#         plt.ylabel('Predicted Number of Migrants')
+#         plt.xticks(df_forecast['Year'])
+#         st.pyplot(plt)
+
+#     elif menu_option == "Bar Chart":
+#         # Bar chart comparing predicted migrants across neighborhoods
+#         st.write("### Bar Chart of Predicted Migrants by Neighborhood")
+#         plt.figure(figsize=(10, 6))
+#         plt.bar(df['Neighborhood'], df['Number of Migrants'], color='blue', alpha=0.7)
+#         plt.title('Predicted Number of Migrants by Neighborhood')
+#         plt.xlabel('Neighborhood')
+#         plt.ylabel('Number of Migrants')
+#         plt.xticks(rotation=45)
+#         st.pyplot(plt)
+
+#     # Model evaluation
+#     X = df[['GDP Growth Rate (%)', 'Unemployment Rate (%)', 'Living Conditions Index', 
+#              'Population Density (people/km²)', 'Median Age (years)']]
+#     y_migrants = df['Number of Migrants']
+
+#     X_train, X_test, y_train_migrants, y_test_migrants = train_test_split(
+#         X, y_migrants, test_size=0.2, random_state=0
+#     )
+
+#     pipeline_migrants = make_pipeline(
+#         StandardScaler(),
+#         LinearRegression()
+#     )
+#     pipeline_migrants.fit(X_train, y_train_migrants)
+
+#     # Predictions
+#     df['Predicted Migrants'] = pipeline_migrants.predict(X)
+
+#     # Evaluate model
+#     y_pred_migrants = pipeline_migrants.predict(X_test)
+#     mse_migrants = mean_squared_error(y_test_migrants, y_pred_migrants)
+
+#     st.write("### Model Evaluation")
+#     st.write(f"Mean Squared Error for Number of Migrants: {mse_migrants:.2f}")
+
+# if __name__ == "__main__":
+#     main()

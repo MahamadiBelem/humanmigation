@@ -9,10 +9,10 @@ from PIL import Image
 import plotly.express as px
 from streamlit_option_menu import option_menu
 import os
-from data_management import main
-from main_app_map import main2
+from archive.data_management import main
+from archive.main_app_map import main2
 from prediction import predict_migrant
-from visualisation import visualize
+from archive.visualisation import visualize
 from api_ui import open_api_migrate
 from bson import ObjectId
 # from fix_colums import consulter_donnees

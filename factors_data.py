@@ -7,8 +7,8 @@ from streamlit_option_menu import option_menu
 from io import StringIO
 from PIL import Image
 import os
-from data_management import main
-from main_app_map import main2
+from archive.data_management import main
+from archive.main_app_map import main2
 import streamlit as st
 from pymongo import MongoClient
 from datetime import datetime

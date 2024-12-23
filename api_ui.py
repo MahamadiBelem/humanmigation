@@ -19,3 +19,4 @@ def open_api_migrate():
         new_data = {"field1": field1, "field2": field2}
         response = requests.post("http://localhost:8501/api/insp/donnee-migration-humaine", json=new_data)
         st.write(response.json())
+

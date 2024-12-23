@@ -4,17 +4,17 @@ from datetime import datetime
 import pandas as pd
 from bson.objectid import ObjectId
 from streamlit_option_menu import option_menu
-import random
 from PIL import Image
 from dataclasses import asdict
 from streamlit_keycloak import login
 import streamlit as st
-from login import log_user
 from home_admin_01 import home_admin
 from factors_data import consult_data, charger_fichier_factors
-
-from spatiale import consulation_spatiale,upload_file_spatiale
+from spatiale import consulation_spatiale,upload_file_spatiale 
 from api_ui import open_api_migrate
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
 # Connexion à MongoDB
 client = MongoClient("mongodb://localhost:27017/")
@@ -22,16 +22,48 @@ db = client['test1_db']
 metadata_collection = db['metadata']
 
 
+
 # ****************************************************************************************
 # *****************************************************************************************
-# #This is the global part to be appear in all page
+# # This is the global part to be appear in all page. It's follow with marque css design
 # # Configuration de la page
-# st.set_page_config(page_title="Migration Data Hub", page_icon="🌍")
+
 
 st.set_page_config(page_title="Migration Data Hub",page_icon="🌍", layout="wide")
+import os
+
+# st.set_option('deprecation.showfileUploaderEncoding', False)
+# st.set_option('deprecation.showPyplotGlobalUse', False)
+
+# os.environ['PYTHONWARNINGS'] = "ignore::DeprecationWarning"
+# import warnings
+# warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+# import streamlit as st
+# import warnings
+
+# # Suppress specific deprecation warning
+# warnings.filterwarnings("ignore", message="Please replace st.experimental_get_query_params with st.query_params.")
+
+# import streamlit as st
+# import sys
+# import os
+# # Temporarily suppress stderr to hide the deprecation message
+# stderr = sys.stderr
+# sys.stderr = open(os.devnull, "w")
+
+# # Use st.experimental_get_query_params temporarily without warning
+# params = st.experimental_get_query_params()
+
+# # Restore stderr
+# sys.stderr = stderr
 
 
 
+
+
+
+ 
 
 
 st.markdown("""
@@ -89,20 +121,14 @@ st.markdown("""
 
 
 
-
-
-
-
-
-
 def main():
-    st.subheader(f"Welcome {keycloak.user_info.get('preferred_username', 'User')}!")
-    st.write("Here is your user information:")
+    st.subheader(f" {keycloak.user_info.get('preferred_username', 'User')}!")
     # st.write(asdict(keycloak))
     if st.button("Disconnect"):
         keycloak.authenticated = False
-    
-# st.title("Streamlit Keycloak example")
+
+
+
 keycloak = login(
     url="http://localhost:8080",
     realm="humanmigration",
@@ -114,17 +140,10 @@ if keycloak.authenticated:
     st.write("Authentication success.")
     main()
 else:
-    st.write("Authentication failed.")
-    # st.write("Debug Info:")
-    # st.write(asdict(keycloak))  # Additional debugging information
-    # st.write("Check the browser console for more details.")
+    st.write("Sign In !")
 
 
 
-
-
-
-# log_user()
 
 # Colonnes requises
 required_columns = ['Year', 'Location', 'Origin', 'Region', 'Investment', 'Type', 'Destination', 'Age Group', 'Education Level', 'Rating', 'Migrants', 'raisons']
@@ -157,14 +176,7 @@ def charger_fichier():
             # Vérifier si les colonnes requises sont présentes
             if all(column in df.columns for column in required_columns):
                 st.success("Le fichier contient toutes les colonnes requises.")
-                
-                # type_fichier = st.text_input("Data type",["Migration Data","Spatiale Data,", "Factors Data"])
-                # auteur = st.text_input("Auteur")
-                # description = st.text_area("Description")
-                # date_chargement = st.date_input("Date de chargement", datetime.now())
-                # date_fin = st.date_input("Date de fin")
-                # visibilite = st.selectbox("Visibilité", ["Public", "Privé"])
-                
+                              
                 if st.button("Enregistrer"):
                     metadata = {
                         "type_fichier": type_fichier,
@@ -238,58 +250,6 @@ def mettre_a_jour_fichier():
             else:
                 st.error("Le fichier ne contient pas toutes les colonnes requises.")
 
-# Fonctionnalité 2: Mettre à jour un fichier
-def mettre_a_jour_fichier_ancien():
-    st.header("Mettre à jour un fichier")
-    fichiers = metadata_collection.find()
-
-        # Générer fichier_ids avec concaténation
-    # fichier_ids = [
-    #     f"{fichier['auteur']}_{fichier['date_chargement'][:4]}_{random.randint(1000, 9999)}"
-    #     for fichier in fichiers
-    # ]
-
-    fichier_ids = [str(fichier["_id"]) for fichier in fichiers]
-    fichier_choisi = st.selectbox("Choisir un fichier à mettre à jour", fichier_ids)
-    
-    if fichier_choisi:
-        fichier = metadata_collection.find_one({"_id": ObjectId(fichier_choisi)})
-        type_fichier = st.text_input("Type de fichier", fichier["type_fichier"])
-        auteur = st.text_input("Auteur", fichier["auteur"])
-        description = st.text_area("Description", fichier["description"])
-        date_chargement = st.date_input("Date de chargement", datetime.strptime(fichier["date_chargement"], "%Y-%m-%d"))
-        date_fin = st.date_input("Date de fin", datetime.strptime(fichier["date_fin"], "%Y-%m-%d"))
-        visibilite = st.selectbox("Visibilité", ["Public", "Privé"], index=["Public", "Privé"].index(fichier["visibilite"]))
-        
-        uploaded_file = st.file_uploader("Choisir un fichier CSV ou Excel pour mise à jour", type=["csv", "xlsx"])
-        
-        if uploaded_file is not None:
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(uploaded_file)
-            
-            # Vérifier si les colonnes requises sont présentes
-            if all(column in df.columns for column in required_columns):
-                st.success("Le fichier contient toutes les colonnes requises.")
-                
-                if st.button("Mettre à jour"):
-                    metadata_collection.update_one(
-                        {"_id": ObjectId(fichier_choisi)},
-                        {"$set": {
-                            "type_fichier": type_fichier,
-                            "auteur": auteur,
-                            "description": description,
-                            "date_chargement": date_chargement.strftime("%Y-%m-%d"),
-                            "date_fin": date_fin.strftime("%Y-%m-%d"),
-                            "visibilite": visibilite,
-                            "data": df.to_dict(orient="records")
-                        }}
-                    )
-                    st.success("Fichier mis à jour avec succès!")
-            else:
-                st.error("Le fichier ne contient pas toutes les colonnes requises.")
-
 
 def supprimer_fichier():
     st.header("Supprimer un fichier")
@@ -313,16 +273,6 @@ def supprimer_fichier():
         st.success("Fichier supprimé avec succès!")
 
 
-# Fonctionnalité 3: Supprimer un fichier
-def supprimer_fichier_ancien():
-    st.header("Supprimer un fichier")
-    fichiers = metadata_collection.find()
-    fichier_ids = [str(fichier["_id"]) for fichier in fichiers]
-    fichier_choisi = st.selectbox("Choisir un fichier à supprimer", fichier_ids)
-    
-    if fichier_choisi and st.button("Supprimer"):
-        metadata_collection.delete_one({"_id": ObjectId(fichier_choisi)})
-        st.success("Fichier supprimé avec succès!")
 
 
 
@@ -349,16 +299,7 @@ def consulter_donnees_tab():
         st.write(df)
 
 
-def consulter_donnees_tab_ancien():
-    st.header("Consulter les données")
-    fichiers = metadata_collection.find()
-    fichier_ids = [str(fichier["_id"]) for fichier in fichiers]
-    fichier_choisi = st.selectbox("Choisir un fichier à consulter", fichier_ids)
-    
-    if fichier_choisi:
-        fichier = metadata_collection.find_one({"_id": ObjectId(fichier_choisi)})
-        df = pd.DataFrame(fichier["data"])
-        st.write(df)
+
 
 
 def consulter_metadata():
@@ -393,7 +334,9 @@ def consulter_metadata():
                 st.dataframe(df)
         else:
             st.error("Fichier non trouvé.")
-# Fonctionnalité 4: Consulter les données
+
+
+
 def consulter_donnees():
     # st.header("Consulter les données")
 
@@ -407,33 +350,47 @@ def consulter_donnees():
                     default_index=0,  # Option sélectionnée par défaut
                     orientation="vertical"  # Orientation du menu
                 )
+
     
-#     file_option = st.radio(
-#     'Choisissez une option',
-#     ('Spatiale Data','Migration Data')
-# )
     if file_option == 'Spatiale Data':
         consulation_spatiale()
     elif file_option == 'Factors Data':
         consult_data()
     elif file_option == "Migration Data":
-        # Récupérer les fichiers
+
+
         fichiers = list(metadata_collection.find())
-        
-        # Créer une liste d'IDs personnalisés
-        fichier_ids = []
-        for index, fichier in enumerate(fichiers, start=1):
-            auteur = fichier.get("auteur", "inconnu")
-            annee = datetime.now().year
-            id_personnalise = f"{auteur}_{annee}_{index:04d}"
-            fichier_ids.append((id_personnalise, str(fichier["_id"])))
-        
-        # Afficher les IDs personnalisés dans le selectbox
-        fichier_choisi = st.selectbox("Choisir un fichier à consulter", fichier_ids, format_func=lambda x: x[0])
-        
+
+        # Convertir la liste en DataFrame
+        df = pd.DataFrame(fichiers)
+
+        # Supprimer les colonnes 'description', 'visibilite', 'data', '_id'
+        df = df.drop(columns=['description', 'visibilite', 'data', '_id'])
+
+        # Créer les fichier_ids
+        fichier_ids = [(f"{fichier.get('auteur', 'inconnu')}_{datetime.now().year}_{index:04d}", str(fichier["_id"])) 
+                    for index, fichier in enumerate(fichiers, start=1)]
+
+        # Afficher les boutons radio pour chaque fichier
+        fichier_choisi = st.radio("Choisir un fichier à consulter", fichier_ids, format_func=lambda x: x[0])
+
+        st.dataframe(fichier_choisi)
+
+        # Ajouter la colonne 'view' avec fichier_ids
+        df['view'] = [f"Details for {fichier[0]}" for fichier in fichier_ids]
+
+        # Afficher le DataFrame sans ces colonnes
+        st.dataframe(df)
+
+
+        # Process the selected file
         if fichier_choisi:
             fichier = metadata_collection.find_one({"_id": ObjectId(fichier_choisi[1])})
-            df = pd.DataFrame(fichier["data"])
+            if fichier and "data" in fichier:
+                df = pd.DataFrame(fichier["data"])
+                st.write(f"Données pour le fichier {fichier_choisi[0]}:")
+                # st.dataframe(df)
+
             
             with st.sidebar:
                 visualization_type = option_menu(
@@ -460,162 +417,6 @@ def consulter_donnees():
                 st.area_chart(df.set_index('Year')[['Migrants']])
 
 
-def afficher_details_fichier_ok(file_id):
-    fichier = metadata_collection.find_one({"_id": ObjectId(file_id)})
-    if fichier:
-        st.header("Détails du fichier")
-        st.write(f"**Type de fichier**: {fichier['type_fichier']}")
-        st.write(f"**Auteur**: {fichier['auteur']}")
-        st.write(f"**Date de chargement**: {fichier['date_chargement']}")
-        st.write(f"**Description**: {fichier['description']}")
-        st.write(f"**Visibilité**: {fichier['visibilite']}")
-        
-        df = pd.DataFrame(fichier["data"])
-        st.write(df)
-        
-        if st.button("Retour"):
-            st.experimental_set_query_params()
-
-def liste_fichiers_ok():
-    st.subheader("Available Dataset")
-    st.write("""
-        <div style="background-color: #3498db; padding: 7px;">
-            <h3 style="color: white; text-align: center;">
-                View Different Data from institutions and researchers around the world
-            </h3>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Retrieve all files from the collection
-    fichiers = list(metadata_collection.find())
-    
-    # Convert the list of files into a DataFrame
-    fichiers_df = pd.DataFrame(fichiers, columns=["_id", "type_fichier", "auteur", "date_chargement", "description", "visibilite"])
-
-    # Remove the MongoDB ObjectId for simplicity in display
-    fichiers_df["_id"] = fichiers_df["_id"].apply(str)
-
-    # Create a column with "Voir détails" links using HTML and query parameters
-    fichiers_df['Voir détails'] = fichiers_df["_id"].apply(
-        lambda id: f'<a href="?file_id={id}" target="_self">Voir détails</a>'
-    )
-
-    # Display the table using st.write with the HTML-rendered links
-    st.write("""
-        <div style="display: flex; justify-content: center; margin: 20px;">
-            {table}
-        </div>
-    """.format(table=fichiers_df[['type_fichier', 'auteur', 'date_chargement', 'description', 'visibilite', 'Voir détails']].to_html(escape=False)), unsafe_allow_html=True)
-
-    # Check if a file_id is passed in query parameters
-    query_params = st.experimental_get_query_params()
-    if "file_id" in query_params:
-        file_id = query_params["file_id"][0]
-        afficher_details_fichier(file_id)
-
-
-def afficher_details_fichier_ancien(file_id):
-    # Center the header
-    st.write("""
-        <div style="display: flex; justify-content: center; margin: 20px;">
-            <h1>Détails du fichier</h1>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    # Fetch the file metadata from MongoDB
-    fichier = metadata_collection.find_one({"_id": ObjectId(file_id)})
-    
-    if fichier:
-        # Display the metadata in a table
-        # st.subheader("Métadonnées du fichier")
-        st.write("""
-            <div style="display: flex; justify-content: center; margin: 20px;">
-                <table style="border-collapse: collapse; width: 50%;">
-                    <tr>
-                        <th style="border: 1px solid black; padding: 8px;">Type de fichier</th>
-                        <td style="border: 1px solid black; padding: 8px;">{type_fichier}</td>
-                    </tr>
-                    <tr>
-                        <th style="border: 1px solid black; padding: 8px;">Auteur</th>
-                        <td style="border: 1px solid black; padding: 8px;">{auteur}</td>
-                    </tr>
-                    <tr>
-                        <th style="border: 1px solid black; padding: 8px;">Description</th>
-                        <td style="border: 1px solid black; padding: 8px;">{description}</td>
-                    </tr>
-                    <tr>
-                        <th style="border: 1px solid black; padding: 8px;">Date de chargement</th>
-                        <td style="border: 1px solid black; padding: 8px;">{date_chargement}</td>
-                    </tr>
-                    <tr>
-                        <th style="border: 1px solid black; padding: 8px;">Date de fin</th>
-                        <td style="border: 1px solid black; padding: 8px;">{date_fin}</td>
-                    </tr>
-                    <tr>
-                        <th style="border: 1px solid black; padding: 8px;">Visibilité</th>
-                        <td style="border: 1px solid black; padding: 8px;">{visibilite}</td>
-                    </tr>
-                </table>
-            </div>
-        """.format(
-            type_fichier=fichier['type_fichier'],
-            auteur=fichier['auteur'],
-            description=fichier['description'],
-            date_chargement=fichier['date_chargement'],
-            date_fin=fichier['date_fin'],
-            visibilite=fichier['visibilite']
-        ), unsafe_allow_html=True)
-        
-        # Option to display file data (optional)
-        if st.checkbox("Afficher les données du fichier"):
-            df = pd.DataFrame(fichier['data'])
-            st.dataframe(df)
-    else:
-        st.error("Fichier non trouvé.")
-
-
-
-# Function to display file details when a file is selected
-def liste_fichiers_ancien():
-    st.subheader("Available Dataset")
-    st.write("""
-        <div style="background-color: #3498db; padding: 7px;">
-            <h3 style="color: white; text-align: center;">
-                View Different Data from institutions and researchers around the world
-            </h3>
-        </div>
-    """, unsafe_allow_html=True)
-
-    # Retrieve all files from the collection
-    fichiers = list(metadata_collection.find())
-    
-    # Convert the list of files into a DataFrame
-    fichiers_df = pd.DataFrame(fichiers, columns=["_id", "type_fichier", "auteur", "date_chargement", "description", "visibilite"])
-
-    # Remove the MongoDB ObjectId for simplicity in display
-    fichiers_df["_id"] = fichiers_df["_id"].apply(str)
-
-    # Create a column with "Voir détails" links using HTML and query parameters
-    fichiers_df['Voir détails'] = fichiers_df["_id"].apply(
-        lambda id: f'<a href="?file_id={id}" target="_self">Voir détails</a>'
-    )
-
-    # Display the table using st.write with the HTML-rendered links
-    st.write("""
-        <div style="display: flex; justify-content: center; margin: 20px;">
-            {table}
-        </div>
-    """.format(table=fichiers_df[['type_fichier', 'auteur', 'date_chargement', 'description', 'visibilite', 'Voir détails']].to_html(escape=False)), unsafe_allow_html=True)
-
-    # Check if a file_id is passed in query parameters
-    query_params = st.experimental_get_query_params()
-    if "file_id" in query_params:
-        file_id = query_params["file_id"][0]
-        afficher_details_fichier(file_id)
-
-
-# Main application logic
-# liste_fichiers()
 
 # Function to display the welcome page
 def display_welcome_page():
@@ -624,7 +425,7 @@ def display_welcome_page():
 
     # Title and slogan
     st.markdown("<h1 style='text-align: center; color: #004d99;'>Migration Data Hub</h1>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center; color: #0066cc;'>Votre portail pour explorer, analyser et visualiser les données migratoires.</h2>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center; color: #0066cc;'>Your portal to explore, analyze and visualize migration data.</h2>", unsafe_allow_html=True)
     
     st.header("Overview")
     st.write("""
@@ -689,30 +490,6 @@ def display_welcome_page():
 
 
 
-# def sidebar_menu():
-#     with st.sidebar:
-#         selected = option_menu(
-#             menu_title="Connexion",
-#             options=["View Data", "Welcome","Consultation"],
-#             icons=["house", "person","table", "file-text"],
-#             default_index=1,  # Set default to "Welcome"
-#             orientation="vertical"
-#         )
-#     return selected
-
-    
-# def welcome_msg():
-#     selected_option = sidebar_menu()
-    
-#     if selected_option == "Welcome":
-#         display_welcome_page()
-#     elif selected_option == "View Data":
-#         liste_fichiers()
-#     elif selected_option == "Consultation":
-#          consulter_donnees()
-
-# welcome_msg()
-
 
 def afficher_details_fichier(file_id):
     fichier = metadata_collection.find_one({"_id": ObjectId(file_id)})
@@ -758,18 +535,70 @@ def afficher_details_fichier(file_id):
         st.markdown(f"""
             <div class="center-table">
                 <table class="full-width-table">
-                    <tr><th>Type de fichier</th><td>{fichier['type_fichier']}</td></tr>
-                    <tr><th>Auteur</th><td>{fichier['auteur']}</td></tr>
-                    <tr><th>Date de chargement</th><td>{fichier['date_chargement']}</td></tr>
+                    <tr><th>File Type</th><td>{fichier['type_fichier']}</td></tr>
+                    <tr><th>Othor</th><td>{fichier['auteur']}</td></tr>
+                    <tr><th>Load Date</th><td>{fichier['date_chargement']}</td></tr>
                     <tr><th>Description</th><td>{fichier['description']}</td></tr>
-                    <tr><th>Visibilité</th><td>{fichier['visibilite']}</td></tr>
+                    <tr><th>Visibility</th><td>{fichier['visibilite']}</td></tr>
                 </table>
             </div>
         """, unsafe_allow_html=True)
         
         df = pd.DataFrame(fichier["data"])
-        st.write(df)
+        # st.write(df)
         
+
+
+        fichiers = list(metadata_collection.find())
+        df = pd.DataFrame(fichiers)
+
+        # Supprimer les colonnes 'description', 'visibilite', 'data', '_id'
+        df = df.drop(columns=['description', 'visibilite', 'data', '_id'])
+        # Créer les fichier_ids
+        fichier_ids = [(f"{fichier.get('auteur', 'inconnu')}_{datetime.now().year}_{index:04d}", str(fichier["_id"])) 
+                    for index, fichier in enumerate(fichiers, start=1)]
+
+        # Afficher les boutons radio pour chaque fichier
+        # fichier_choisi = st.radio("Choisir", fichier_ids, format_func=lambda x: x[0])
+        # Ajouter la colonne 'view' avec fichier_ids
+        df['view'] = [f"Details for {fichier[0]}" for fichier in fichier_ids]
+
+        # # Afficher le DataFrame sans ces colonnes
+        # st.dataframe(df)
+
+
+        # Process the selected file
+       
+        if fichier and "data" in fichier:
+            df = pd.DataFrame(fichier["data"])
+                # st.write(f"Données pour le fichier {fichier_choisi[0]}:")
+                # st.dataframe(df)
+
+            
+        with st.sidebar:
+            visualization_type = option_menu(
+                    'Choisir le type de visualisation:',
+                    ['Tabulaire', 'Bar Chart', 'Line Chart', 'Area Chart'],
+                    icons=['list', 'bar-chart', 'line-chart', 'area-chart'],
+                    menu_icon="cast",
+                    default_index=0,
+                    orientation='vertical'
+                )
+
+        st.write(f'Vous avez sélectionné : {visualization_type}')
+
+        if visualization_type == 'Tabulaire':
+                st.write(df)
+
+        elif visualization_type == 'Bar Chart':
+                st.bar_chart(df.set_index('Year')[['Migrants']])
+
+        elif visualization_type == 'Line Chart':
+                st.line_chart(df.set_index('Year')[['Migrants']])
+
+        elif visualization_type == 'Area Chart':
+                st.area_chart(df.set_index('Year')[['Migrants']])
+
         # Bouton de téléchargement
         csv = df.to_csv(index=False).encode('utf-8')
         st.download_button(
@@ -833,6 +662,39 @@ def liste_fichiers():
         </div>
     """.format(table=fichiers_df[['type_fichier', 'auteur', 'date_chargement', 'description', 'visibilite', 'Voir détails']].to_html(escape=False)), unsafe_allow_html=True)
 
+
+
+# def liste_fichiers_factors():
+#     st.subheader("Available Dataset")
+#     st.write("""
+#         <div style="background-color: #3498db; padding: 7px;">
+#             <h3 style="color: white; text-align: center;">
+#                 View Different Data from institutions and researchers around the world
+#             </h3>
+#         </div>
+#     """, unsafe_allow_html=True)
+
+#     # Retrieve all files from the collection
+#     fichiers = list(metadata_collection.find())
+    
+#     # Convert the list of files into a DataFrame
+#     fichiers_df = pd.DataFrame(fichiers, columns=["_id", "type_fichier", "auteur", "date_chargement", "description", "visibilite"])
+
+#     # Remove the MongoDB ObjectId for simplicity in display
+#     fichiers_df["_id"] = fichiers_df["_id"].apply(str)
+
+#     # Create a column with "Voir détails" links using HTML and query parameters
+#     fichiers_df['Voir détails'] = fichiers_df["_id"].apply(
+#         lambda id: f'<a href="?file_id={id}" target="_self">Voir détails</a>'
+#     )
+
+#     # Display the table using st.write with the HTML-rendered links
+#     st.write("""
+#         <div style="display: flex; justify-content: center; margin: 20px;">
+#             {table}
+#         </div>
+#     """.format(table=fichiers_df[['type_fichier', 'auteur', 'date_chargement', 'description', 'visibilite', 'Voir détails']].to_html(escape=False)), unsafe_allow_html=True)
+
 def sidebar_menu():
     with st.sidebar:
         selected = option_menu(
@@ -844,7 +706,12 @@ def sidebar_menu():
         )
     return selected
 
+
+
 def welcome_msg():
+    # # Suppress specific deprecation warning
+    # warnings.filterwarnings("ignore", message="Please replace st.experimental_get_query_params with st.query_params.")
+    
     query_params = st.experimental_get_query_params()
     if "file_id" in query_params:
         file_id = query_params["file_id"][0]
@@ -862,35 +729,6 @@ def welcome_msg():
 # Appel de la fonction
 if not keycloak.authenticated:
     welcome_msg()
-
-
-# Add the new option in the sidebar menu
-# st.session_state.logged_in = False
-# with st.sidebar:
-#     choix = option_menu(
-#         "Menu", 
-#         ["Welcome dashboard", "Charger un fichier", "Mettre à jour un fichier", "Supprimer un fichier", "Consulter les données", "Consulter les métadonnées"],
-#         icons=["cloud-upload","cloud-upload", "pencil", "trash", "table", "info-circle"],
-#         menu_icon="cast",
-#         default_index=0,
-#         orientation='vertical'
-#     )
-
-# # Add functionality for the new metadata consultation option
-
-# if choix == "Welcome dashboard":
-#     liste_fichiers()
-# if choix == "Charger un fichier" and keycloak.authenticated:
-#     charger_fichier()
-# elif choix == "Mettre à jour un fichier" and keycloak.authenticated:
-#     mettre_a_jour_fichier()
-# elif choix == "Supprimer un fichier" and keycloak.authenticated:
-#     supprimer_fichier()
-# elif choix == "Consulter les données":
-#     consulter_donnees()
-# elif choix == "Consulter les métadonnées":
-#     consulter_metadata()
-
 
 
 # Sidebar menu options

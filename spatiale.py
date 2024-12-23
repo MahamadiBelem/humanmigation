@@ -169,7 +169,7 @@ def upload_file_spatiale():
             spark_df.printSchema()
 
 # Interface utilisateur
-st.title("Migrations en Afrique de l'Ouest")
+# st.title("Migrations en Afrique de l'Ouest")
 # st.write("Téléchargez un fichier CSV ou Excel contenant les données de migration ou consultez les fichiers enregistrés.")
 
 # # Créez un menu d'options

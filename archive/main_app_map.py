@@ -1,7 +1,7 @@
 # main_app.py
 import os
 import streamlit as st
-from migration_maps import save_uploaded_file, load_data, display_migration_map, spark
+from archive.migration_maps import save_uploaded_file, load_data, display_migration_map, spark
 from streamlit_folium import folium_static  # Import the folium_static function
 
 # Créer le répertoire si nécessaire
