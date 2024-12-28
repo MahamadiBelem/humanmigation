@@ -2,22 +2,14 @@ import streamlit as st
 from pymongo import MongoClient
 import pandas as pd
 from datetime import datetime
-import bcrypt
 from streamlit_option_menu import option_menu
-from io import StringIO
-from PIL import Image
-import os
-from archive.data_management import main
-from archive.main_app_map import main2
 import streamlit as st
 from pymongo import MongoClient
 from datetime import datetime
 import pandas as pd
 from bson.objectid import ObjectId
 from streamlit_option_menu import option_menu
-import random
-from PIL import Image
-from dataclasses import asdict
+
 
 # Connexion à MongoDB
 client = MongoClient("mongodb://localhost:27017/")

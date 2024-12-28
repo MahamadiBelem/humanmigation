@@ -1,0 +1,7 @@
+pymongo==4.4.0
+streamlit-option-menu==0.3.1
+folium==0.14.0
+streamlit-folium==0.10.0
+matplotlib==3.7.1
+seaborn==0.13.2
+Pillow==10.4.0
