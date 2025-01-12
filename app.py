@@ -1054,6 +1054,7 @@ def welcome_msg():
         
         if selected_option == "View Data":
             liste_fichiers()
+            charger_fichier()
         elif selected_option == "Welcome":
             display_welcome_page()
         elif selected_option =="Request":
