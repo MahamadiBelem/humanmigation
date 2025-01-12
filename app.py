@@ -17,12 +17,19 @@ from streamlit_folium import folium_static
 import matplotlib.pyplot as plt
 import seaborn as sns
 from streamlit_keycloak import login
-
+import os
+import pymongo
 
 
 
 # Connexion à MongoDB
-client = MongoClient("mongodb://localhost:27017/")
+# client = MongoClient("mongodb://localhost:27017/")
+
+# Récupérer l'URI MongoDB des secrets
+MONGO_URI = os.getenv('MONGO__uri')  # Notez le double underscore ici
+
+# Connexion à MongoDB
+client = pymongo.MongoClient(MONGO_URI)
 db = client['test_finale_db']
 metadata_collection = db['metadata']
 
