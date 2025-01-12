@@ -6,17 +6,18 @@ from bson.objectid import ObjectId
 from streamlit_option_menu import option_menu
 from PIL import Image
 from home_admin_01 import home_admin
-from factors_data import consult_data
-from spatiale import consulation_spatiale
+# from factors_data import consult_data
+# from spatiale import consulation_spatiale
 from api_ui import open_api_migrate
+from prediction import main
+from request_data import home_request
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import folium_static
 import matplotlib.pyplot as plt
 import seaborn as sns
 from streamlit_keycloak import login
-from prediction import main
-from request_data import home_request
+
 
 
 
@@ -362,9 +363,11 @@ def consulter_donnees():
 
     
     if file_option == 'Spatiale Data':
-        consulation_spatiale()
+        st.header("Page spatiale Data")
+        # consulation_spatiale()
     elif file_option == 'Factors Data':
-        consult_data()
+        st.header("Page Factors Data")
+        # consult_data()
     elif file_option == "Migration Data":
 
 
@@ -876,149 +879,6 @@ def list_files_to_update():
 
 
 
-
-# def afficher_details_fichier1(file_id):
-#     fichier = metadata_collection.find_one({"_id": ObjectId(file_id)})
-#     if fichier:
-#         st.header("Détails du fichier")
-        
-#         # CSS pour centrer le tableau et occuper toute la page
-#         st.markdown("""
-#             <style>
-#             .center-table {
-#                 display: flex;
-#                 justify-content: center;
-#                 align-items: center;
-#                 height: 100%;
-#             }
-#             .full-width-table {
-#                 width: 100%;
-#                 border-collapse: collapse;
-#             }
-#             .full-width-table th, .full-width-table td {
-#                 border: 1px solid #ddd;
-#                 padding: 8px;
-#                 text-align: center;
-#             }
-#             .full-width-table th {
-#                 background-color: #f2f2f2;
-#             }
-#             .download-button {
-#                 background-color: red;
-#                 color: white;
-#                 padding: 10px;
-#                 border: none;
-#                 border-radius: 5px;
-#                 cursor: pointer;
-#                 text-align: center;
-#                 display: inline-block;
-#                 margin: 10px 0;
-#             }
-#             </style>
-#         """, unsafe_allow_html=True)
-        
-#         # Détails du fichier dans un tableau
-#         st.markdown(f"""
-#             <div class="center-table">
-#                 <table class="full-width-table">
-#                     <tr><th>File Type</th><td>{fichier['type_fichier']}</td></tr>
-#                     <tr><th>Othor</th><td>{fichier['auteur']}</td></tr>
-#                     <tr><th>Load Date</th><td>{fichier['date_chargement']}</td></tr>
-#                     <tr><th>Description</th><td>{fichier['description']}</td></tr>
-#                     <tr><th>Visibility</th><td>{fichier['visibilite']}</td></tr>
-#                 </table>
-#             </div>
-#         """, unsafe_allow_html=True)
-        
-#         df = pd.DataFrame(fichier["data"])
-#         # st.write(df)
-        
-
-
-#         fichiers = list(metadata_collection.find())
-#         df = pd.DataFrame(fichiers)
-
-#         # Supprimer les colonnes 'description', 'visibilite', 'data', '_id'
-#         df = df.drop(columns=['description', 'visibilite', 'data', '_id'])
-#         # Créer les fichier_ids
-#         fichier_ids = [(f"{fichier.get('auteur', 'inconnu')}_{datetime.now().year}_{index:04d}", str(fichier["_id"])) 
-#                     for index, fichier in enumerate(fichiers, start=1)]
-
-#         # Afficher les boutons radio pour chaque fichier
-#         # fichier_choisi = st.radio("Choisir", fichier_ids, format_func=lambda x: x[0])
-#         # Ajouter la colonne 'view' avec fichier_ids
-#         df['view'] = [f"Details for {fichier[0]}" for fichier in fichier_ids]
-
-#         # # Afficher le DataFrame sans ces colonnes
-#         # st.dataframe(df)
-
-
-#         # Process the selected file
-       
-#         if fichier and "data" in fichier:
-#             df = pd.DataFrame(fichier["data"])
-#                 # st.write(f"Données pour le fichier {fichier_choisi[0]}:")
-#                 # st.dataframe(df)
-
-            
-#         with st.sidebar:
-#             visualization_type = option_menu(
-#                     'Choisir le type de visualisation:',
-#                     ['Tabulaire', 'Bar Chart', 'Line Chart', 'Area Chart'],
-#                     icons=['list', 'bar-chart', 'line-chart', 'area-chart'],
-#                     menu_icon="cast",
-#                     default_index=0,
-#                     orientation='vertical'
-#                 )
-
-#         st.write(f'Vous avez sélectionné : {visualization_type}')
-
-#         if visualization_type == 'Tabulaire':
-#                 st.write(df)
-
-#         elif visualization_type == 'Bar Chart':
-#                 st.bar_chart(df.set_index('Year')[['Migrants']])
-
-#         elif visualization_type == 'Line Chart':
-#                 st.line_chart(df.set_index('Year')[['Migrants']])
-
-#         elif visualization_type == 'Area Chart':
-#                 st.area_chart(df.set_index('Year')[['Migrants']])
-
-#         # Bouton de téléchargement
-#         csv = df.to_csv(index=False).encode('utf-8')
-#         st.download_button(
-#             label="Télécharger le fichier",
-#             data=csv,
-#             file_name=f"{fichier['auteur']}_{fichier['date_chargement']}.csv",
-#             mime='text/csv',
-#             key='download-csv',
-#             help="Cliquez pour télécharger le fichier"
-#         )
-        
-#         # CSS pour styliser le bouton de téléchargement
-#         st.markdown("""
-#             <style>
-#             .stDownloadButton button {
-#                 background-color: red;
-#                 color: white;
-#                 padding: 10px;
-#                 border: none;
-#                 border-radius: 5px;
-#                 cursor: pointer;
-#                 text-align: center;
-#                 display: inline-block;
-#                 margin: 10px 0;
-#             }
-#             </style>
-#         """, unsafe_allow_html=True)
-        
-#         if st.button("Retour"):
-#             st.experimental_set_query_params()
-
-
-
-
 def liste_fichiers():
     st.subheader("Available Dataset")
     st.write("""
@@ -1113,14 +973,7 @@ def sidebar_menu():
         )
     return selected
 
-
-#***********************************************************************************************************************************
-#******************************************************************************************************************************
-#**********************************************************************************************************************************
-
-#***********************************************************************************************************************************
-#******************************************************************************************************************************
-#**********************************************************************************************************************************  
+  
 
 # def logout():
 #     if st.button("Disconnect"):
@@ -1204,6 +1057,7 @@ def welcome_msg():
         elif selected_option == "Welcome":
             display_welcome_page()
         elif selected_option =="Request":
+            # st.write("Requesting data")
             home_request()
         elif selected_option== "Sign In":
             # Bouton pour afficher le formulaire de connexion

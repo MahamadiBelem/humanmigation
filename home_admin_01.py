@@ -1,19 +1,6 @@
 import streamlit as st
-from pymongo import MongoClient
-import pandas as pd
-from datetime import datetime
-import bcrypt
-from streamlit_option_menu import option_menu
-from io import StringIO
 from PIL import Image
-import plotly.express as px
-from streamlit_option_menu import option_menu
-import os
-from archive.data_management import main
-from archive.main_app_map import main2
-from archive.visualisation import visualize
-from api_ui import open_api_migrate
-from bson import ObjectId
+
 
 # This home is the home after login succesfullly
 def home_admin():
