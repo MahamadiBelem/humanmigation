@@ -1053,7 +1053,7 @@ def welcome_msg():
         selected_option = sidebar_menu()
         
         if selected_option == "View Data":
-            liste_fichiers()
+            # liste_fichiers()
             charger_fichier()
         elif selected_option == "Welcome":
             display_welcome_page()
