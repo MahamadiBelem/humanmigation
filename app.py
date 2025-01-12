@@ -1084,21 +1084,21 @@ def welcome_msg():
             
 
 # Affiche le message de bienvenue ou le formulaire de connexion
-if not is_authenticated():
-    if st.session_state.get("show_login", False):
-        username = st.text_input("Nom d'utilisateur")
-        password = st.text_input("Mot de passe", type="password")
+# if not is_authenticated():
+#     if st.session_state.get("show_login", False):
+#         username = st.text_input("Nom d'utilisateur")
+#         password = st.text_input("Mot de passe", type="password")
         
-        if st.button("Se connecter"):
-            login_user(username, password)
-            # st.experimental_rerun()  # Rafraîchir pour mettre à jour l'état
-    else:
-        welcome_msg()
-else:
+#         if st.button("Se connecter"):
+#             login_user(username, password)
+#             # st.experimental_rerun()  # Rafraîchir pour mettre à jour l'état
+#     else:
+#         welcome_msg()
+# else:
     # Menu dans la barre latérale
-    menu_options = ["Welcome dashboard", "Load Data", "Update Data", "Delete Data", "🔍 API", "🔍 Prediction", "Logout"]
+menu_options = ["Welcome dashboard", "Load Data", "Update Data", "Delete Data", "🔍 API", "🔍 Prediction", "Logout"]
 
-    with st.sidebar:
+with st.sidebar:
         choix = option_menu(
             "Menu", 
             menu_options,
@@ -1109,19 +1109,19 @@ else:
         )
 
     # Logique en fonction du choix du menu
-    if choix == "Welcome dashboard":
+if choix == "Welcome dashboard":
         home_admin()
-    elif choix == "Load Data":
+elif choix == "Load Data":
         charger_fichier()
-    elif choix == "Update Data":
+elif choix == "Update Data":
         list_files_to_update()
-    elif choix == "Delete Data":
+elif choix == "Delete Data":
         list_files_to_delete()
-    elif choix == "🔍 API":
+elif choix == "🔍 API":
         open_api_migrate()
-    elif choix == "🔍 Prediction":
+elif choix == "🔍 Prediction":
         # st.write("Prédiction")
         main()
-    elif choix == "Logout":
+elif choix == "Logout":
         logout_user()
         # st.experimental_rerun()  # Rafraîchir pour mettre à jour l'état
